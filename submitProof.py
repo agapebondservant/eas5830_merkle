@@ -113,9 +113,9 @@ def prove_merkle(merkle_tree, random_indx):
     for level in range(len(merkle_tree)-1):
         if idx % 2 == 1:
             merkle_proof.append(merkle_tree[level][idx - 1])
-            merkle_proof.append(merkle_tree[level][idx])
+            #merkle_proof.append(merkle_tree[level][idx])
         else:
-            merkle_proof.append(merkle_tree[level][idx])
+            #merkle_proof.append(merkle_tree[level][idx])
             merkle_proof.append(merkle_tree[level][idx + 1])
 
         idx = math.floor(idx / 2)
