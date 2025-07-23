@@ -27,7 +27,7 @@ def merkle_assignment():
     tree = build_merkle(leaves)
 
     # Select a random leaf and create a proof for that leaf
-    random_leaf_index = random.randint(0, 8191) #TODO generate a random index from primes to claim (0 is already claimed)
+    random_leaf_index = random.randint(1, 8191) #TODO generate a random index from primes to claim (0 is already claimed)
     proof = prove_merkle(tree, random_leaf_index)
 
     # This is the same way the grader generates a challenge for sign_challenge()
@@ -73,7 +73,7 @@ def convert_leaves(primes_list):
 
     # TODO YOUR CODE HERE
 
-    return [int.to_bytes(prime,'big') for prime in primes_list]
+    return [prime.to_bytes(32, byteorder='big') for prime in primes_list]
 
 
 def build_merkle(leaves):
@@ -88,16 +88,13 @@ def build_merkle(leaves):
     tree = []
     done = False
 
-    if len(leaves) % 2 != 0:
-        leaves.append(leaves[:-1])
-
     while not done:
         if not tree:
             tree.append(leaves)
         else:
             last_level = tree[-1]
             tree.append([hash_pair(last_level[i],last_level[i+1]) for i in range(0,len(last_level),2)])
-        if len(tree[-1]) == 1
+        if len(tree[-1]) == 1:
             done = True
 
     return tree
@@ -113,7 +110,7 @@ def prove_merkle(merkle_tree, random_indx):
     merkle_proof = []
     # TODO YOUR CODE HERE
     idx = random_indx
-    for level in range(len(tree)-1):
+    for level in range(len(merkle_tree)-1):
         if idx % 2 == 1:
             merkle_proof.append(merkle_tree[level][idx - 1])
             merkle_proof.append(merkle_tree[level][idx])
@@ -123,6 +120,7 @@ def prove_merkle(merkle_tree, random_indx):
 
         idx = math.floor(idx / 2)
 
+    print(merkle_proof)
     return merkle_proof
 
 
@@ -140,15 +138,8 @@ def sign_challenge(challenge):
     eth_sk = acct.key
 
     # TODO YOUR CODE HERE
-    eth_sig_obj = acct.Account.sign_message(challenge, private_key=account.key)
-    # w3 = Web3()
-	# # url = "https://bsc-testnet.infura.io/v3/af83c96cc0ff485bb901f9ed92726df3"
-	# # w3 = Web3(HTTPProvider(url))
-	# # w3.middleware_onion.add(ExtraDataToPOAMiddleware)
-    # message = encode_defunct(challenge)
-    # account = get_account()
-    # signed_message = w3.eth.account.sign_message(message, private_key=account.key)
-
+    encoded_msg = eth_account.messages.encode_defunct(text=challenge)
+    eth_sig_obj = eth_account.Account.sign_message(encoded_msg, private_key=eth_sk)
     return addr, eth_sig_obj.signature.hex()
 
 
@@ -165,8 +156,15 @@ def send_signed_msg(proof, random_leaf):
     w3 = connect_to(chain)
 
     # TODO YOUR CODE HERE
-    tx_hash = 
-
+    url = "https://bsc-testnet.infura.io/v3/af83c96cc0ff485bb901f9ed92726df3"
+    contract = w3.eth.contract(address=address, abi=abi)
+    transaction = contract.functions.submit(proof=proof, leaf=random_leaf).build_transaction({
+        'from': acct.address,
+        'gasPrice': w3.eth.gas_price,
+        'nonce': w3.eth.get_transaction_count(acct.address),
+    })
+    signed_transaction = w3.eth.account.sign_transaction(transaction, acct.key)
+    tx_hash = w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
     return tx_hash
 
 
