@@ -164,7 +164,7 @@ def send_signed_msg(proof, random_leaf):
         'nonce': w3.eth.get_transaction_count(acct.address),
     })
     signed_transaction = w3.eth.account.sign_transaction(transaction, acct.key)
-    tx_hash = w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
+    tx_hash = w3.eth.send_raw_transaction(signed_transaction.raw_transaction)
     return tx_hash
 
 
